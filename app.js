@@ -9,6 +9,116 @@ const OUTPUT_DIR = path.resolve(__dirname, "output");
 const outputPath = path.join(OUTPUT_DIR, "team.html");
 
 const render = require("./lib/htmlRenderer");
+const { restoreDefaultPrompts } = require("inquirer");
+
+const employees = [];
+
+managerPrompt();
+
+function managerPrompt() {
+    return inquirer.prompt([
+        {
+            type: "input",
+            name: "managerName",
+            message: "What is the name of the manager for this project?"
+        },
+        {
+            type: "input",
+            name: "managerEmail",
+            message: "What is the manager's email address?"
+        },
+        {
+            type: "input",
+            name: "office",
+            message: "What is the manager's office number?"
+        }
+    ]).then(result => {
+        const manager = new Manager(result.managerName, 1, result.managerEmail, result.office);
+
+        employees.push(manager);
+
+        userPrompts();
+    });
+}
+
+function userPrompts() {
+    return inquirer.prompt([
+        {
+            type: "input",
+            name: "name",
+            message: "What is the name of the next team member?"
+        },
+        {
+            type: "list",
+            name: "role",
+            message: "What is this person's role in this project?",
+            choices: [
+                'Engineer',
+                'Intern'
+            ]
+        },
+        {
+            type: "input",
+            name: "email",
+            message: "What is this person's email address?"
+        },
+    ]).then(result => rolePrompts(result));
+}    
+    
+function rolePrompts(result) {
+    if(result.role === "Engineer") {
+        return inquirer.prompt([
+            {
+                type: "input",
+                name: "github",
+                message: "What is this engineer's GitHub profile URL?"
+            }
+        ]).then(engineerResult => {
+            const id = employees.length + 1;
+            const engineer = new Engineer(result.name, id, result.email, engineerResult.github);
+
+            employees.push(engineer);
+
+            repeat();
+        });
+    } else {
+        return inquirer.prompt([
+            {
+                type: "input",
+                name: "school",
+                message: "What is this intern's school name?"
+            }
+        ]).then(internResult => {
+            const id = employees.length + 1;
+            const intern = new Intern(result.name, id, result.email, internResult.school);
+
+            employees.push(intern);
+
+            repeat();
+        });
+    }
+};
+    
+function repeat() {
+    return inquirer.prompt([
+        {
+            type: "list",
+            name: "continue",
+            message: "Is there another team member?",
+            choices: [
+                "Yes",
+                "No"
+            ]
+        }
+    ]).then(result => {
+        if(result.continue === "Yes"){
+            userPrompts();
+        } else {
+            fs.writeFileSync(outputPath, render(employees), "utf-8")
+        };
+    })
+}
+
 
 
 // Write code to use inquirer to gather information about the development team members,
